@@ -22,6 +22,7 @@ async def async_setup_entry(
 
 class PriorityStateSensor(SensorEntity):
     _attr_name = "Priority State Rules"
+    _attr_icon = "mdi:lightbulb-group-outline"
 
     def __init__(self, manager: RuleManager) -> None:
         self._manager = manager
