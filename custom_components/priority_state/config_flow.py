@@ -55,7 +55,12 @@ class PriorityStateConfigFlow(ConfigFlow, domain=DOMAIN):
         entry = self._get_reconfigure_entry()
 
         if user_input is not None:
-            return self.async_update_entry(entry, data=user_input)
+            self.hass.config_entries.async_update_entry(
+                entry, data=user_input
+            )
+            manager = self.hass.data[DOMAIN][entry.entry_id]
+            manager.target_light = user_input["target_light"]
+            return self.async_abort(reason="reconfigure_successful")
 
         data_schema = vol.Schema(
             {

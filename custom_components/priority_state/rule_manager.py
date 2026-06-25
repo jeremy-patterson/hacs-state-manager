@@ -29,7 +29,7 @@ class RuleManager:
 
     @property
     def rules(self) -> list[RuleType]:
-        return self._rules
+        return list(self._rules)
 
     @property
     def target_light(self) -> str | None:

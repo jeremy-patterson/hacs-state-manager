@@ -85,15 +85,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         DOMAIN, "clear_rules", async_handle_clear_rules
     )
 
-    await hass.http.async_register_static_paths([
-        StaticPathConfig(
-            f"/{DOMAIN}/priority-state-card.js",
-            hass.config.path("custom_components", DOMAIN, "www", "priority-state-card.js"),
-            cache_headers=False,
-        ),
-    ])
+    if hasattr(hass, "http") and hass.http:
+        await hass.http.async_register_static_paths([
+            StaticPathConfig(
+                f"/{DOMAIN}/priority-state-card.js",
+                hass.config.path("custom_components", DOMAIN, "www", "priority-state-card.js"),
+                cache_headers=False,
+            ),
+        ])
 
-    await _async_register_card(hass)
+    if "lovelace" in hass.data:
+        await _async_register_card(hass)
 
     return True
 
