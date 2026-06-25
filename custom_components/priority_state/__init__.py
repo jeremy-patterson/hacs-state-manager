@@ -93,7 +93,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ),
     ])
 
+    await _async_register_card(hass)
+
     return True
+
+
+async def _async_register_card(hass: HomeAssistant) -> None:
+    try:
+        resources = hass.data["lovelace"].resources
+        existing = any(
+            r.get("url", "").startswith(f"/{DOMAIN}/priority-state-card")
+            for r in resources.async_items()
+        )
+        if not existing:
+            await resources.async_create_item({
+                "res_type": "module",
+                "url": f"/{DOMAIN}/priority-state-card.js",
+            })
+    except (KeyError, TypeError, ValueError):
+        pass
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

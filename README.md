@@ -41,13 +41,11 @@ Copy the `custom_components/priority_state/` directory into your Home Assistant'
 
 ### Lovelace Card
 
-The card is bundled with the integration. After restart, register it as a resource:
+The card is bundled and auto-registered with Lovelace on restart. No manual resource setup needed — it just appears in the card picker.
 
-1. **Settings → Dashboards → three dots → Resources**
-2. Add a new resource: `/priority_state/priority-state-card.js?v=1` with type **JavaScript Module**
-3. Edit a dashboard, add a new card, and search for **Priority State**
-
-The card requires no configuration — it auto-detects the integration's sensor entity.
+1. Edit a dashboard, click **Add Card**
+2. Search for **Priority State**
+3. The card auto-detects the integration's sensor entity — no configuration required.
 
 The card shows:
 - Target light status (on/off + current color dot)
