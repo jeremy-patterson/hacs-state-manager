@@ -1,0 +1,107 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Priority State",
+        "description": "Add a Priority State instance. Rules will control this light based on entity states.",
+        "data": {
+          "name": "Instance Name",
+          "target_light": "Target Light"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Priority State",
+        "data": {
+          "target_light": "Target Light"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Manage Priority State",
+        "description": "**Target light:** {target_light}\n**Active rules:** {rule_count}\n"
+      },
+      "change_light": {
+        "title": "Change target light",
+        "description": "Select which light the rules will control.",
+        "data": {
+          "target_light": "Target Light"
+        }
+      },
+      "add_rule": {
+        "title": "Add a rule",
+        "description": "When the watched entity is `on`, the light will change to this color.",
+        "data": {
+          "name": "Rule Name",
+          "entity_id": "Watched Entity",
+          "priority": "Priority",
+          "rgb_color": "Color",
+          "enabled": "Enabled"
+        }
+      },
+      "edit_rule": {
+        "title": "Edit rule",
+        "description": "Update the rule settings.",
+        "data": {
+          "name": "Rule Name",
+          "entity_id": "Watched Entity",
+          "priority": "Priority",
+          "rgb_color": "Color",
+          "enabled": "Enabled",
+          "delete_this_rule": "Delete this rule"
+        }
+      },
+      "select_edit_rule": {
+        "title": "Edit a rule",
+        "description": "Select which rule to edit.",
+        "data": {
+          "rule_id": "Rule"
+        }
+      },
+      "debug_mode": {
+        "title": "Debug mode",
+        "description": "When enabled, detailed logs are written to home-assistant.log for troubleshooting.",
+        "data": {
+          "debug": "Debug mode"
+        }
+      },
+      "clear_rules": {
+        "title": "Clear all rules",
+        "description": "Are you sure you want to delete **all** rules?"
+      }
+    }
+  },
+  "error": {
+    "duplicate_entity": "A rule for this entity already exists"
+  },
+  "services": {
+    "add_rule": {
+      "name": "Add rule",
+      "description": "Add a new priority rule",
+      "fields": {
+        "rgb_color": {
+          "name": "Color"
+        }
+      }
+    },
+    "remove_rule": {
+      "name": "Remove rule",
+      "description": "Remove a rule by its ID"
+    },
+    "update_rule": {
+      "name": "Update rule",
+      "description": "Update an existing rule",
+      "fields": {
+        "rgb_color": {
+          "name": "Color"
+        }
+      }
+    },
+    "clear_rules": {
+      "name": "Clear all rules",
+      "description": "Remove all rules and turn off the target light"
+    }
+  }
+}

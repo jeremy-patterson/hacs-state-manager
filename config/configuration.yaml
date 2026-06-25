@@ -112,6 +112,9 @@ recorder:
       - component_loaded
 
 # https://www.home-assistant.io/integrations/logger/
+# Demo entities for testing
+demo:
+
 logger:
   default: info
   logs:
@@ -159,3 +162,4 @@ logger:
 
     # Your integration debug logging - shows EVERYTHING from your integration
     custom_components.ha_integration_domain: debug
+    custom_components.priority_state: debug

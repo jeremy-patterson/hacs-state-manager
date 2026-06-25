@@ -1,5 +1,6 @@
 {
-  "name": "Integration blueprint",
+  "name": "Priority State",
   "homeassistant": "2026.4.0",
-  "hacs": "2.0.5"
+  "hacs": "2.0.5",
+  "render_readme": true
 }

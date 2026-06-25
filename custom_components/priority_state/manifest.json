@@ -1,0 +1,13 @@
+{
+  "domain": "priority_state",
+  "name": "Priority State",
+  "codeowners": [
+    "@jeremy-patterson"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/jeremy-patterson/hacs-state-manager",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/jeremy-patterson/hacs-state-manager/issues",
+  "version": "0.1.0"
+}

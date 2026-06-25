@@ -1,0 +1,71 @@
+add_rule:
+  name: Add rule
+  description: Add a new priority rule
+  fields:
+    name:
+      required: true
+      selector:
+        text:
+    entity_id:
+      required: true
+      selector:
+        entity:
+    priority:
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 100
+    rgb_color:
+      required: true
+      selector:
+        color_rgb:
+    enabled:
+      required: false
+      selector:
+        boolean:
+
+remove_rule:
+  name: Remove rule
+  description: Remove a rule by its ID
+  fields:
+    rule_id:
+      required: true
+      selector:
+        text:
+
+update_rule:
+  name: Update rule
+  description: Update an existing rule
+  fields:
+    rule_id:
+      required: true
+      selector:
+        text:
+    name:
+      required: false
+      selector:
+        text:
+    entity_id:
+      required: false
+      selector:
+        entity:
+    priority:
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 100
+    rgb_color:
+      required: false
+      selector:
+        color_rgb:
+    enabled:
+      required: false
+      selector:
+        boolean:
+
+clear_rules:
+  name: Clear all rules
+  description: Remove all rules and turn off the target light
+  fields: {}
