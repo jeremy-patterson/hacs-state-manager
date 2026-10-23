@@ -4,10 +4,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from homeassistant.core import HomeAssistant
-
 from custom_components.priority_state.const import DOMAIN
 from custom_components.priority_state.rule_manager import RuleManager
+from homeassistant.core import HomeAssistant
 
 
 @pytest.fixture

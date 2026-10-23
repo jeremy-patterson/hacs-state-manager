@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from custom_components.priority_state.const import DOMAIN
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
-
-from custom_components.priority_state.const import DOMAIN
 
 SOURCE_USER = config_entries.SOURCE_USER
 
@@ -55,7 +54,6 @@ async def test_reconfigure_step(hass: HomeAssistant) -> None:
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {"target_light": "light.test"})
     entry = result["result"]
-    entry_id = entry.entry_id
 
     assert entry.data["target_light"] == "light.test"
 

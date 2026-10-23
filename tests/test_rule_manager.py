@@ -2,11 +2,8 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
-from homeassistant.core import HomeAssistant
-
 from custom_components.priority_state.rule_manager import RuleManager
+from homeassistant.core import HomeAssistant
 
 
 async def test_add_rule(manager: RuleManager) -> None:
