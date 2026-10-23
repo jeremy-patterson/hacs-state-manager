@@ -22,7 +22,7 @@
     "step": {
       "init": {
         "title": "Manage Priority State",
-        "description": "**Target light:** {target_light}\n**Configured rules:** {rule_count}\n**Active rule:** {active_rule}\n"
+        "description": "**Target light:** {target_light}\n**Configured rules:** {rule_count}\n**Active rule:** {active_rule}"
       },
       "change_light": {
         "title": "Change target light",
@@ -97,10 +97,10 @@
         "title": "Clear all rules",
         "description": "Are you sure you want to delete **all** rules?"
       }
+    },
+    "error": {
+      "duplicate_entity": "A rule for this entity already exists"
     }
-  },
-  "error": {
-    "duplicate_entity": "A rule for this entity already exists"
   },
   "services": {
     "add_rule": {

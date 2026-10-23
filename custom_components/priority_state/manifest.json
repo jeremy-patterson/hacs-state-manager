@@ -5,6 +5,9 @@
     "@jeremy-patterson"
   ],
   "config_flow": true,
+  "dependencies": [
+    "http"
+  ],
   "documentation": "https://github.com/jeremy-patterson/hacs-state-manager",
   "integration_type": "service",
   "iot_class": "calculated",
