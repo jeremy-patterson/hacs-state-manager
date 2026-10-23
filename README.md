@@ -12,6 +12,7 @@ A Home Assistant custom integration that controls a light's color based on prior
 - **Config flow UI** — all rule management happens through the integration's Configure dialog
 - **Lovelace card** — visual dashboard showing all rules, their states, and the active winner
 - **Debug mode** — toggle verbose logging and per-rule entity toggle buttons on the card
+- **Live notifications** — mirror the active rule to Home Assistant Companion Live Activities on one or more mobile devices
 - **Services** — add, update, and remove rules programmatically via Developer Tools
 
 ## Installation
@@ -38,6 +39,7 @@ Copy the `custom_components/priority_state/` directory into your Home Assistant'
    - **Color** — the RGB color the light should show when this rule wins
    - **Enabled** — toggle a rule on/off without deleting it
 4. Add the **Priority State** card to a Lovelace dashboard for a live view
+5. In **Configure → Configure live notifications**, choose one or more Home Assistant Companion mobile devices. The activity is updated whenever the active rule changes.
 
 ### Lovelace Card
 
@@ -48,6 +50,7 @@ The card is bundled and auto-registered with Lovelace on restart. No manual reso
 3. The card auto-detects the integration's sensor entity — no configuration required.
 
 The card shows:
+
 - Target light status (on/off + current color dot)
 - All rules sorted by priority with color swatches
 - ON/OFF indicators per entity

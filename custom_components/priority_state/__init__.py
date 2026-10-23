@@ -21,6 +21,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     manager = RuleManager(hass, entry.entry_id)
     await manager.async_load()
     manager.target_light = entry.data["target_light"]
+    manager.notification_devices = entry.data.get("notification_devices", [])
+    manager.notification_services = entry.data.get("notification_services", [])
 
     if entry.data.get("debug", False):
         LOGGER.setLevel(logging.DEBUG)
@@ -55,9 +57,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async def async_handle_update_rule(call: Any) -> None:
         data = dict(call.data)
         rule_id = data.pop("rule_id")
-        if "entity_id" in data and manager.is_entity_id_used(
-            data["entity_id"], exclude_rule_id=rule_id
-        ):
+        if "entity_id" in data and manager.is_entity_id_used(data["entity_id"], exclude_rule_id=rule_id):
             LOGGER.warning(
                 "Rule for %s already exists — ignoring update_rule call",
                 data["entity_id"],
@@ -72,27 +72,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async def async_handle_clear_rules(call: Any) -> None:
         await manager.async_clear_rules()
 
-    hass.services.async_register(
-        DOMAIN, "add_rule", async_handle_add_rule
-    )
-    hass.services.async_register(
-        DOMAIN, "remove_rule", async_handle_remove_rule
-    )
-    hass.services.async_register(
-        DOMAIN, "update_rule", async_handle_update_rule
-    )
-    hass.services.async_register(
-        DOMAIN, "clear_rules", async_handle_clear_rules
-    )
+    hass.services.async_register(DOMAIN, "add_rule", async_handle_add_rule)
+    hass.services.async_register(DOMAIN, "remove_rule", async_handle_remove_rule)
+    hass.services.async_register(DOMAIN, "update_rule", async_handle_update_rule)
+    hass.services.async_register(DOMAIN, "clear_rules", async_handle_clear_rules)
 
     if hasattr(hass, "http") and hass.http:
-        await hass.http.async_register_static_paths([
-            StaticPathConfig(
-                f"/{DOMAIN}/priority-state-card.js",
-                hass.config.path("custom_components", DOMAIN, "www", "priority-state-card.js"),
-                cache_headers=False,
-            ),
-        ])
+        await hass.http.async_register_static_paths(
+            [
+                StaticPathConfig(
+                    f"/{DOMAIN}/priority-state-card.js",
+                    hass.config.path("custom_components", DOMAIN, "www", "priority-state-card.js"),
+                    cache_headers=False,
+                ),
+            ]
+        )
 
     if "lovelace" in hass.data:
         await _async_register_card(hass)
@@ -103,16 +97,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def _async_register_card(hass: HomeAssistant) -> None:
     try:
         resources = hass.data["lovelace"].resources
-        existing = any(
-            r.get("url", "").startswith(f"/{DOMAIN}/priority-state-card")
-            for r in resources.async_items()
-        )
+        existing = any(r.get("url", "").startswith(f"/{DOMAIN}/priority-state-card") for r in resources.async_items())
         if not existing:
-            await resources.async_create_item({
-                "res_type": "module",
-                "url": f"/{DOMAIN}/priority-state-card.js",
-            })
-    except (KeyError, TypeError, ValueError):
+            await resources.async_create_item(
+                {
+                    "res_type": "module",
+                    "url": f"/{DOMAIN}/priority-state-card.js",
+                }
+            )
+    except KeyError, TypeError, ValueError:
         pass
 
 

@@ -29,6 +29,8 @@ system_health:
 # With analytics disabled, diagnostic data stays local and isn't sent anywhere.
 
 # Core integrations
+mobile_app:
+
 http:
   # Development server settings for Codespaces/DevContainer
   server_host: "0.0.0.0"

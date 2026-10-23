@@ -3,10 +3,11 @@
     "step": {
       "user": {
         "title": "Set up Priority State",
-        "description": "Add a Priority State instance. Rules will control this light based on entity states.",
+        "description": "Add a Priority State instance. Rules will control this light based on entity states. Optionally choose mobile devices to show the active state as a Live Activity.",
         "data": {
           "name": "Instance Name",
-          "target_light": "Target Light"
+          "target_light": "Target Light",
+          "notification_devices": "Live notification devices"
         }
       },
       "reconfigure": {
@@ -21,13 +22,20 @@
     "step": {
       "init": {
         "title": "Manage Priority State",
-        "description": "**Target light:** {target_light}\n**Active rules:** {rule_count}\n"
+        "description": "**Target light:** {target_light}\n**Configured rules:** {rule_count}\n**Active rule:** {active_rule}\n"
       },
       "change_light": {
         "title": "Change target light",
         "description": "Select which light the rules will control.",
         "data": {
           "target_light": "Target Light"
+        }
+      },
+      "notifications": {
+        "title": "Configure live notifications",
+        "description": "Choose the mobile devices that should receive the Live Activity. The same activity is updated on each device.",
+        "data": {
+          "notification_devices": "Notification devices"
         }
       },
       "add_rule": {
@@ -39,6 +47,10 @@
           "priority": "Priority",
           "rgb_color": "Color",
           "enabled": "Enabled"
+        },
+        "data_description": {
+          "priority": "Lower numbers win when multiple watched entities are on.",
+          "enabled": "Disabled rules are ignored without deleting them."
         }
       },
       "edit_rule": {
@@ -49,16 +61,30 @@
           "entity_id": "Watched Entity",
           "priority": "Priority",
           "rgb_color": "Color",
-          "enabled": "Enabled",
-          "delete_this_rule": "Delete this rule"
+          "enabled": "Enabled"
+        },
+        "data_description": {
+          "priority": "Lower numbers win when multiple watched entities are on.",
+          "enabled": "Disabled rules are ignored without deleting them."
         }
       },
       "select_edit_rule": {
         "title": "Edit a rule",
-        "description": "Select which rule to edit.",
+        "description": "Choose a rule to update. Rules are sorted by priority.",
         "data": {
-          "rule_id": "Rule"
+          "rule_id": "Rule to edit"
         }
+      },
+      "select_delete_rule": {
+        "title": "Delete a rule",
+        "description": "Choose the rule you want to delete.",
+        "data": {
+          "rule_id": "Rule to delete"
+        }
+      },
+      "confirm_delete_rule": {
+        "title": "Confirm deletion",
+        "description": "Delete **{rule_name}**? This cannot be undone."
       },
       "debug_mode": {
         "title": "Debug mode",

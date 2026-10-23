@@ -198,7 +198,7 @@ if [[ -n "${HA_VERSION:-}" ]]; then
 else
     # Read from hacs.json: treat YEAR.MONTH.0 as YEAR.MONTH so the latest
     # stable patch is installed (hacs.json records minimum version, not pin)
-    HA_VERSION=$(grep '"homeassistant"' hacs.json | head -1 | sed 's/.*"homeassistant"\s*:\s*"\([^"]*\)".*/\1/')
+    HA_VERSION=$(python3 -c 'import json; print(json.load(open("hacs.json"))["homeassistant"])')
     if [[ -z "$HA_VERSION" ]]; then
         log_error "HA_VERSION not set and could not be determined from hacs.json"
         exit 1
@@ -234,7 +234,15 @@ mkdir -p "/tmp/homeassistant"
 _download "${HA_CORE_BASE_URL}/homeassistant/package_constraints.txt" "/tmp/homeassistant/package_constraints.txt" # constraints for requirements files
 _download "${HA_CORE_BASE_URL}/requirements.txt" "/tmp/requirements.txt"                                           # required by requirements_all.txt
 _download "${HA_CORE_BASE_URL}/requirements_all.txt" "/tmp/requirements_all.txt"
-uv pip install --requirement "/tmp/requirements_all.txt"
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    # pyitachip2ir has no compatible macOS SDK build and is not needed by this
+    # project. Keep the rest of Home Assistant's optional integrations intact.
+    sed '/^pyitachip2ir==/d' \
+        "/tmp/requirements_all.txt" >"/tmp/requirements_all_macos.txt"
+    uv pip install --requirement "/tmp/requirements_all_macos.txt"
+else
+    uv pip install --requirement "/tmp/requirements_all.txt"
+fi
 
 log_header "Installing Home Assistant ${HA_VERSION} test dependencies"
 _download "${HA_CORE_BASE_URL}/requirements_test_pre_commit.txt" "/tmp/requirements_test_pre_commit.txt" # required by requirements_test.txt
