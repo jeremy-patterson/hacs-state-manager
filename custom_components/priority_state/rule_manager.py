@@ -1,20 +1,23 @@
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Callable
-from datetime import datetime
+from datetime import datetime, timedelta
+import inspect
 from typing import Any
 import uuid
 
 from homeassistant.components.light import ATTR_HS_COLOR
-from homeassistant.const import SERVICE_TURN_OFF, SERVICE_TURN_ON, STATE_ON
+from homeassistant.const import SERVICE_TURN_OFF, SERVICE_TURN_ON, STATE_OFF, STATE_ON, STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers.event import async_track_state_change_event
+from homeassistant.helpers.event import async_track_state_change_event, async_track_time_interval
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util, slugify
 from homeassistant.util.color import color_hs_to_RGB
 
-from .const import LOGGER, STORAGE_KEY, STORAGE_VERSION
+from .const import LOGGER, STORAGE_KEY, STORAGE_LOCK_KEY, STORAGE_VERSION
 
 RuleType = dict[str, Any]
 
@@ -23,13 +26,18 @@ class RuleManager:
     def __init__(self, hass: HomeAssistant, entry_id: str) -> None:
         self.hass = hass
         self.entry_id = entry_id
-        self._store = Store[dict[str, list[RuleType]]](hass, STORAGE_VERSION, STORAGE_KEY)
+        self._store = Store[dict[str, Any]](hass, STORAGE_VERSION, STORAGE_KEY)
         self._rules: list[RuleType] = []
         self._unsub_tracker: Callable[[], None] | None = None
+        self._unsub_notification_refresh: Callable[[], None] | None = None
         self._target_light: str | None = None
+        self._target_light_expectation: tuple[str, list[float] | None] | None = None
         self._notification_devices: list[str] = []
         self._notification_services: list[str] = []
         self._update_callbacks: list[Callable[[], None]] = []
+        self._evaluation_generation = 0
+        self._evaluation_lock = asyncio.Lock()
+        self._storage_lock = hass.data.setdefault(STORAGE_LOCK_KEY, asyncio.Lock())
 
     @property
     def rules(self) -> list[RuleType]:
@@ -42,6 +50,8 @@ class RuleManager:
     @target_light.setter
     def target_light(self, value: str) -> None:
         self._target_light = value
+        self._target_light_expectation = None
+        self._update_tracking()
 
     @property
     def notification_services(self) -> list[str]:
@@ -81,22 +91,57 @@ class RuleManager:
             cb()
 
     async def async_load(self) -> None:
-        data = await self._store.async_load()
-        if data and "rules" in data:
-            self._rules = data["rules"]
-            migrated = False
+        async with self._storage_lock:
+            data = await self._async_load_store()
+            if not data:
+                return
+
+            entries = data.get("entries")
+            migrate_storage = False
+            if isinstance(entries, dict):
+                stored_rules = entries.get(self.entry_id, [])
+                self._rules = stored_rules if isinstance(stored_rules, list) else []
+            elif "rules" in data:
+                # Migrate the original single-entry storage format on the next save.
+                stored_rules = data["rules"]
+                self._rules = stored_rules if isinstance(stored_rules, list) else []
+                migrate_storage = True
+
+            migrated_rules = False
             for rule in self._rules:
                 if "enabled" not in rule or rule["enabled"] is None:
                     rule["enabled"] = True
-                    migrated = True
-            if migrated:
-                await self.async_save()
+                    migrated_rules = True
+            if migrate_storage or migrated_rules:
+                await self._async_save_locked(data)
 
     async def async_save(self) -> None:
-        await self._store.async_save({"rules": self._rules})
+        async with self._storage_lock:
+            data = await self._async_load_store() or {}
+            await self._async_save_locked(data)
+
+    async def _async_load_store(self) -> dict[str, Any] | None:
+        result = self._store.async_load()
+        if inspect.isawaitable(result):
+            return await result
+        return result
+
+    async def _async_save_locked(self, data: dict[str, Any]) -> None:
+        entries = data.get("entries")
+        if not isinstance(entries, dict):
+            entries = {}
+            if isinstance(data.get("rules"), list):
+                entries[self.entry_id] = data["rules"]
+        entries[self.entry_id] = self._rules
+        await self._store.async_save({"entries": entries})
 
     async def async_start(self) -> None:
         self._update_tracking()
+        self._unsub_notification_refresh = async_track_time_interval(
+            self.hass,
+            self._handle_notification_refresh,
+            timedelta(minutes=1),
+        )
         await self._evaluate()
         self._notify_update()
 
@@ -104,27 +149,54 @@ class RuleManager:
         if self._unsub_tracker:
             self._unsub_tracker()
             self._unsub_tracker = None
+        if self._unsub_notification_refresh:
+            self._unsub_notification_refresh()
+            self._unsub_notification_refresh = None
 
     def _update_tracking(self) -> None:
         if self._unsub_tracker:
             self._unsub_tracker()
             self._unsub_tracker = None
 
-        entity_ids = [r["entity_id"] for r in self._rules if r.get("entity_id")]
+        entity_ids = {r["entity_id"] for r in self._rules if r.get("entity_id")}
+        if self._target_light:
+            entity_ids.add(self._target_light)
         if entity_ids:
-            self._unsub_tracker = async_track_state_change_event(self.hass, entity_ids, self._handle_state_change)
+            self._unsub_tracker = async_track_state_change_event(self.hass, list(entity_ids), self._handle_state_change)
 
     @callback
     def _handle_state_change(self, event: Any) -> None:
+        entity_id = event.data.get("entity_id")
+        rule_entity_ids = {r["entity_id"] for r in self._rules if r.get("entity_id")}
+        if (
+            entity_id == self._target_light
+            and entity_id not in rule_entity_ids
+            and self._target_light_state_matches(event.data.get("new_state"))
+        ):
+            return
+
         if self.debug:
-            entity_id = event.data.get("entity_id", "?")
+            entity_id = entity_id or "?"
             new_state = event.data.get("new_state")
             state = new_state.state if new_state else "unknown"
             LOGGER.debug("State change: %s → %s, re-evaluating", entity_id, state)
-        self.hass.async_create_task(self._evaluate())
+        self._evaluation_generation += 1
+        self.hass.async_create_task(self._evaluate(self._evaluation_generation))
 
-    async def _evaluate(self) -> None:
-        if not self._target_light:
+    @callback
+    def _handle_notification_refresh(self, _now: datetime) -> None:
+        self.hass.async_create_task(self._async_refresh_notification())
+
+    async def _evaluate(self, generation: int | None = None) -> None:
+        if generation is None:
+            self._evaluation_generation += 1
+            generation = self._evaluation_generation
+
+        async with self._evaluation_lock:
+            await self._async_evaluate(generation)
+
+    async def _async_evaluate(self, generation: int) -> None:
+        if not self._target_light or generation != self._evaluation_generation:
             return
 
         active: list[RuleType] = []
@@ -134,6 +206,10 @@ class RuleManager:
                     LOGGER.debug("  Skip disabled: %s", rule["name"])
                 continue
             state = self.hass.states.get(rule["entity_id"])
+            if state and state.state in (STATE_UNAVAILABLE, STATE_UNKNOWN):
+                if self.debug:
+                    LOGGER.debug("Rule %s is temporarily unavailable; retaining current output", rule["name"])
+                return
             is_on = state and state.state == STATE_ON
             if self.debug:
                 LOGGER.debug(
@@ -147,6 +223,7 @@ class RuleManager:
                 active.append(rule)
 
         if not active:
+            self._target_light_expectation = (STATE_OFF, None)
             if self.debug:
                 LOGGER.debug(
                     "No active rules → turning off %s",
@@ -158,11 +235,22 @@ class RuleManager:
                 {"entity_id": self._target_light},
                 blocking=True,
             )
+            if generation != self._evaluation_generation:
+                return
             await self._async_send_live_update(None)
             self._notify_update()
             return
 
         winner = min(active, key=lambda r: r["priority"])
+        tied_rules = [rule for rule in active if rule["priority"] == winner["priority"]]
+        if len(tied_rules) > 1:
+            LOGGER.warning(
+                "Rules %s share priority %s; using the first configured rule: %s",
+                ", ".join(rule["name"] for rule in tied_rules),
+                winner["priority"],
+                winner["name"],
+            )
+        self._target_light_expectation = (STATE_ON, list(winner["hs_color"]))
         if self.debug:
             LOGGER.debug(
                 "Winner: %s (P%d, HS=%s) → %s",
@@ -180,8 +268,41 @@ class RuleManager:
             },
             blocking=True,
         )
+        if generation != self._evaluation_generation:
+            return
         await self._async_send_live_update(winner)
         self._notify_update()
+
+    async def _async_refresh_notification(self) -> None:
+        async with self._evaluation_lock:
+            if not self._target_light:
+                return
+
+            active: list[RuleType] = []
+            for rule in self._rules:
+                if not rule.get("enabled", True):
+                    continue
+                state = self.hass.states.get(rule["entity_id"])
+                if state and state.state in (STATE_UNAVAILABLE, STATE_UNKNOWN):
+                    return
+                if state and state.state == STATE_ON:
+                    active.append(rule)
+
+            winner = min(active, key=lambda r: r["priority"]) if active else None
+            await self._async_send_live_update(winner)
+
+    def _target_light_state_matches(self, state: Any | None) -> bool:
+        if state is None or self._target_light_expectation is None:
+            return False
+
+        expected_state, expected_color = self._target_light_expectation
+        if state.state != expected_state:
+            return False
+        if expected_color is None:
+            return True
+
+        actual_color = state.attributes.get(ATTR_HS_COLOR)
+        return actual_color == expected_color
 
     async def _async_send_live_update(self, winner: RuleType | None) -> None:
         if not self._target_light:
@@ -209,6 +330,8 @@ class RuleManager:
                 "data": {
                     "tag": tag,
                     "live_update": True,
+                    # Android supports persistent notifications; iOS may still allow dismissal.
+                    "persistent": True,
                     "alert_once": True,
                     "notification_icon": notification_icon,
                     "notification_icon_color": color,
@@ -225,7 +348,19 @@ class RuleManager:
         device_registry = dr.async_get(self.hass)
         for device_id in self._notification_devices:
             device = device_registry.async_get(device_id)
-            if device and device.name:
+            if not device:
+                LOGGER.warning("Configured notification device is unavailable: %s", device_id)
+                continue
+
+            mobile_app_id = next(
+                (identifier for integration, identifier in device.identifiers if integration == "mobile_app"),
+                None,
+            )
+            if mobile_app_id:
+                service_name = f"mobile_app_{mobile_app_id}"
+                services.add(f"notify.{service_name}")
+            elif device.name:
+                # Older entries may not have a mobile_app identifier.
                 service_name = slugify(f"mobile_app_{device.name}")
                 services.add(f"notify.{service_name}")
 
@@ -235,7 +370,10 @@ class RuleManager:
                 if self.debug:
                     LOGGER.debug("Notification service is unavailable: %s", service)
                 continue
-            await self.hass.services.async_call(domain, service_name, service_data, blocking=True)
+            try:
+                await self.hass.services.async_call(domain, service_name, service_data, blocking=True)
+            except HomeAssistantError:
+                LOGGER.warning("Failed to deliver notification using %s", service, exc_info=True)
 
     @staticmethod
     def _format_active_duration(started: datetime | None) -> str:
@@ -343,7 +481,11 @@ class RuleManager:
         return rule
 
     async def async_remove_rule(self, rule_id: str) -> None:
+        original_count = len(self._rules)
         self._rules = [r for r in self._rules if r["id"] != rule_id]
+        if len(self._rules) == original_count:
+            LOGGER.warning("Rule not found for removal: %s", rule_id)
+            return
         await self.async_save()
         self._update_tracking()
         if self.debug:
@@ -352,9 +494,11 @@ class RuleManager:
         self._notify_update()
 
     async def async_update_rule(self, rule_id: str, **kwargs: Any) -> None:
+        found = False
         for rule in self._rules:
             if rule["id"] != rule_id:
                 continue
+            found = True
             if "name" in kwargs:
                 rule["name"] = kwargs["name"]
             if "entity_id" in kwargs:
@@ -366,6 +510,9 @@ class RuleManager:
             if "enabled" in kwargs:
                 rule["enabled"] = kwargs["enabled"]
             break
+        if not found:
+            LOGGER.warning("Rule not found for update: %s", rule_id)
+            return
         await self.async_save()
         self._update_tracking()
         if self.debug:

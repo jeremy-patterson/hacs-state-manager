@@ -83,7 +83,19 @@ echo ""
 
 run_hook "test" "pre"
 echo ""
-pytest "${COVERAGE_ARGS[@]}" "${PYTEST_ARGS[@]}"
+if [[ ${#COVERAGE_ARGS[@]} -gt 0 ]]; then
+    if [[ ${#PYTEST_ARGS[@]} -gt 0 ]]; then
+        pytest "${COVERAGE_ARGS[@]}" "${PYTEST_ARGS[@]}"
+    else
+        pytest "${COVERAGE_ARGS[@]}"
+    fi
+else
+    if [[ ${#PYTEST_ARGS[@]} -gt 0 ]]; then
+        pytest "${PYTEST_ARGS[@]}"
+    else
+        pytest
+    fi
+fi
 
 run_hook "test" "post"
 

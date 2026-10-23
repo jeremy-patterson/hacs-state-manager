@@ -47,7 +47,12 @@ The card is bundled and auto-registered with Lovelace on restart. No manual reso
 
 1. Edit a dashboard, click **Add Card**
 2. Search for **Priority State**
-3. The card auto-detects the integration's sensor entity — no configuration required.
+3. The card auto-detects the integration's sensor entity when one instance is configured. If you configure multiple instances, set `entry_id` in the card YAML to select the desired instance.
+
+```yaml
+type: custom:priority-state-card
+entry_id: 01JEXAMPLEENTRYID
+```
 
 The card shows:
 
@@ -64,6 +69,8 @@ The card shows:
 - `priority_state.update_rule` — update an existing rule
 - `priority_state.remove_rule` — remove a rule by ID
 - `priority_state.clear_rules` — remove all rules
+
+When multiple Priority State instances are configured, include the target config entry's `entry_id` in service data. The ID is available as an attribute on the Priority State sensor.
 
 ## Development
 

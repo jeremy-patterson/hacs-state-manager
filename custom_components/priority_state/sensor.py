@@ -41,9 +41,7 @@ class PriorityStateSensor(SensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         target_light = self._manager.target_light
-        light_state = (
-            self.hass.states.get(target_light) if target_light else None
-        )
+        light_state = self.hass.states.get(target_light) if target_light else None
         winner = self._get_winner()
 
         return {
@@ -59,10 +57,9 @@ class PriorityStateSensor(SensorEntity):
                 for r in self._manager.rules
             ],
             "target_light": target_light,
+            "entry_id": self._manager.entry_id,
             "light_state": light_state.state if light_state else None,
-            "light_color": light_state.attributes.get("hs_color")
-            if light_state and light_state.attributes
-            else None,
+            "light_color": light_state.attributes.get("hs_color") if light_state and light_state.attributes else None,
             "winner": winner["id"] if winner else None,
             "winner_name": winner["name"] if winner else None,
             "debug": self._manager.debug,

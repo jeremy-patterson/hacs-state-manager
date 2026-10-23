@@ -5,7 +5,7 @@
     "@jeremy-patterson"
   ],
   "config_flow": true,
-  "dependencies": [
+  "after_dependencies": [
     "http"
   ],
   "documentation": "https://github.com/jeremy-patterson/hacs-state-manager",

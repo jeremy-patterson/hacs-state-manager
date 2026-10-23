@@ -2,6 +2,12 @@ add_rule:
   name: Add rule
   description: Add a new priority rule
   fields:
+    entry_id:
+      name: Config entry ID
+      description: Required only when multiple Priority State entries are configured.
+      required: false
+      selector:
+        text:
     name:
       required: true
       selector:
@@ -29,6 +35,12 @@ remove_rule:
   name: Remove rule
   description: Remove a rule by its ID
   fields:
+    entry_id:
+      name: Config entry ID
+      description: Required only when multiple Priority State entries are configured.
+      required: false
+      selector:
+        text:
     rule_id:
       required: true
       selector:
@@ -38,6 +50,12 @@ update_rule:
   name: Update rule
   description: Update an existing rule
   fields:
+    entry_id:
+      name: Config entry ID
+      description: Required only when multiple Priority State entries are configured.
+      required: false
+      selector:
+        text:
     rule_id:
       required: true
       selector:
@@ -68,4 +86,10 @@ update_rule:
 clear_rules:
   name: Clear all rules
   description: Remove all rules and turn off the target light
-  fields: {}
+  fields:
+    entry_id:
+      name: Config entry ID
+      description: Required only when multiple Priority State entries are configured.
+      required: false
+      selector:
+        text:

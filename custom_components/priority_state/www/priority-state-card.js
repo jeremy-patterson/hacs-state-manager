@@ -264,7 +264,10 @@ class PriorityStateCard extends HTMLElement {
         const ruleId = target.closest("[data-action='delete']").dataset.ruleId;
         const ruleName = target.closest("[data-action='delete']").dataset.ruleName;
         if (confirm(`Delete rule "${ruleName}"?`)) {
-          this._hass.callService("priority_state", "remove_rule", { rule_id: ruleId });
+          this._hass.callService("priority_state", "remove_rule", {
+            entry_id: this._getEntryId(),
+            rule_id: ruleId,
+          });
         }
         return;
       }
@@ -276,7 +279,7 @@ class PriorityStateCard extends HTMLElement {
       }
       if (target.closest("[data-action='clear']")) {
         if (confirm("Clear ALL rules?")) {
-          this._hass.callService("priority_state", "clear_rules", {});
+          this._hass.callService("priority_state", "clear_rules", { entry_id: this._getEntryId() });
         }
         return;
       }
@@ -288,9 +291,19 @@ class PriorityStateCard extends HTMLElement {
   }
 
   _getSensor() {
-    return Object.values(this._hass.states).find(
+    const sensors = Object.values(this._hass.states).filter(
       (s) => s.attributes && Array.isArray(s.attributes.rules)
     );
+    const entryId = this._config && this._config.entry_id;
+    if (entryId) {
+      return sensors.find((s) => s.attributes.entry_id === entryId);
+    }
+    return sensors.length === 1 ? sensors[0] : null;
+  }
+
+  _getEntryId() {
+    const sensor = this._getSensor();
+    return sensor ? sensor.attributes.entry_id : this._config && this._config.entry_id;
   }
 
   _update() {
@@ -305,7 +318,10 @@ class PriorityStateCard extends HTMLElement {
   _renderView() {
     const sensor = this._getSensor();
     if (!sensor) {
-      return `<div class="no-rules">Priority State sensor not found</div>`;
+      const sensors = Object.values(this._hass.states).filter(
+        (s) => s.attributes && Array.isArray(s.attributes.rules)
+      );
+      return `<div class="no-rules">${sensors.length > 1 ? "Set entry_id in the card configuration to choose a Priority State instance." : "Priority State sensor not found"}</div>`;
     }
     const attr = sensor.attributes;
     const rules = attr.rules || [];
@@ -454,6 +470,7 @@ class PriorityStateCard extends HTMLElement {
     }
 
     const serviceData = {
+      entry_id: this._getEntryId(),
       name,
       entity_id: entityId,
       priority,
