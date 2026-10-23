@@ -170,17 +170,10 @@ async def test_is_entity_id_used_excludes_rule_id(manager: RuleManager) -> None:
         saturation=0.0,
     )
 
-    assert (
-        manager.is_entity_id_used(
-            "binary_sensor.test", exclude_rule_id=rule["id"]
-        )
-        is False
-    )
+    assert manager.is_entity_id_used("binary_sensor.test", exclude_rule_id=rule["id"]) is False
 
 
-async def test_evaluate_lowest_priority_wins(
-    hass: HomeAssistant, manager: RuleManager
-) -> None:
+async def test_evaluate_lowest_priority_wins(hass: HomeAssistant, manager: RuleManager) -> None:
     await manager.async_add_rule(
         name="High Priority",
         entity_id="binary_sensor.high",
@@ -201,9 +194,7 @@ async def test_evaluate_lowest_priority_wins(
 
     with (
         patch.object(manager, "_notify_update"),
-        patch(
-            "homeassistant.core.ServiceRegistry.async_call"
-        ) as mock_service_call,
+        patch("homeassistant.core.ServiceRegistry.async_call") as mock_service_call,
     ):
         await manager._evaluate()
 
@@ -218,9 +209,7 @@ async def test_evaluate_lowest_priority_wins(
     )
 
 
-async def test_disabled_rules_skipped(
-    hass: HomeAssistant, manager: RuleManager
-) -> None:
+async def test_disabled_rules_skipped(hass: HomeAssistant, manager: RuleManager) -> None:
     await manager.async_add_rule(
         name="Disabled",
         entity_id="binary_sensor.disabled",
@@ -242,9 +231,7 @@ async def test_disabled_rules_skipped(
 
     with (
         patch.object(manager, "_notify_update"),
-        patch(
-            "homeassistant.core.ServiceRegistry.async_call"
-        ) as mock_service_call,
+        patch("homeassistant.core.ServiceRegistry.async_call") as mock_service_call,
     ):
         await manager._evaluate()
 
@@ -259,9 +246,7 @@ async def test_disabled_rules_skipped(
     )
 
 
-async def test_no_active_rules_turns_light_off(
-    hass: HomeAssistant, manager: RuleManager
-) -> None:
+async def test_no_active_rules_turns_light_off(hass: HomeAssistant, manager: RuleManager) -> None:
     await manager.async_add_rule(
         name="Inactive",
         entity_id="binary_sensor.test",
@@ -274,9 +259,7 @@ async def test_no_active_rules_turns_light_off(
 
     with (
         patch.object(manager, "_notify_update"),
-        patch(
-            "homeassistant.core.ServiceRegistry.async_call"
-        ) as mock_service_call,
+        patch("homeassistant.core.ServiceRegistry.async_call") as mock_service_call,
     ):
         await manager._evaluate()
 
@@ -288,9 +271,7 @@ async def test_no_active_rules_turns_light_off(
     )
 
 
-async def test_active_rule_turns_light_on(
-    hass: HomeAssistant, manager: RuleManager
-) -> None:
+async def test_active_rule_turns_light_on(hass: HomeAssistant, manager: RuleManager) -> None:
     await manager.async_add_rule(
         name="Active",
         entity_id="binary_sensor.test",
@@ -303,9 +284,7 @@ async def test_active_rule_turns_light_on(
 
     with (
         patch.object(manager, "_notify_update"),
-        patch(
-            "homeassistant.core.ServiceRegistry.async_call"
-        ) as mock_service_call,
+        patch("homeassistant.core.ServiceRegistry.async_call") as mock_service_call,
     ):
         await manager._evaluate()
 
