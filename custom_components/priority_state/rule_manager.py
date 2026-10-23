@@ -181,21 +181,21 @@ class RuleManager:
             state = new_state.state if new_state else "unknown"
             LOGGER.debug("State change: %s → %s, re-evaluating", entity_id, state)
         self._evaluation_generation += 1
-        self.hass.async_create_task(self._evaluate(self._evaluation_generation))
+        self.hass.async_create_task(self._evaluate(self._evaluation_generation, notify=entity_id != self._target_light))
 
     @callback
     def _handle_notification_refresh(self, _now: datetime) -> None:
         self.hass.async_create_task(self._async_refresh_notification())
 
-    async def _evaluate(self, generation: int | None = None) -> None:
+    async def _evaluate(self, generation: int | None = None, notify: bool = True) -> None:
         if generation is None:
             self._evaluation_generation += 1
             generation = self._evaluation_generation
 
         async with self._evaluation_lock:
-            await self._async_evaluate(generation)
+            await self._async_evaluate(generation, notify)
 
-    async def _async_evaluate(self, generation: int) -> None:
+    async def _async_evaluate(self, generation: int, notify: bool = True) -> None:
         if not self._target_light or generation != self._evaluation_generation:
             return
 
@@ -237,7 +237,8 @@ class RuleManager:
             )
             if generation != self._evaluation_generation:
                 return
-            await self._async_send_live_update(None)
+            if notify:
+                await self._async_send_live_update(None)
             self._notify_update()
             return
 
@@ -270,7 +271,8 @@ class RuleManager:
         )
         if generation != self._evaluation_generation:
             return
-        await self._async_send_live_update(winner)
+        if notify:
+            await self._async_send_live_update(winner)
         self._notify_update()
 
     async def _async_refresh_notification(self) -> None:
@@ -356,12 +358,12 @@ class RuleManager:
                 (identifier for integration, identifier in device.identifiers if integration == "mobile_app"),
                 None,
             )
-            if mobile_app_id:
-                service_name = f"mobile_app_{mobile_app_id}"
-                services.add(f"notify.{service_name}")
-            elif device.name:
-                # Older entries may not have a mobile_app identifier.
+            if device.name:
+                # Mobile App notification services are based on the device name.
                 service_name = slugify(f"mobile_app_{device.name}")
+                services.add(f"notify.{service_name}")
+            elif mobile_app_id:
+                service_name = f"mobile_app_{mobile_app_id}"
                 services.add(f"notify.{service_name}")
 
         for service in services:

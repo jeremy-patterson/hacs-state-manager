@@ -67,6 +67,8 @@ export PYTHONPATH="${PYTHONPATH:-}:${PWD}/custom_components"
 
 log_header "Starting Home Assistant in development mode"
 log_info "Config directory: ${PWD}/config"
+log_info "Log file: ${PWD}/config/home-assistant.log"
+log_info "Follow logs: ./script/logs"
 log_info "Debug logging: enabled"
 log_separator
 echo ""

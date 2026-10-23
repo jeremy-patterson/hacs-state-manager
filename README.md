@@ -80,6 +80,7 @@ This integration was built with the [integration blueprint](https://github.com/j
 
 ```bash
 script/develop      # Start local HA instance
+script/logs         # Show and follow the local HA log
 script/check        # Full validation suite
 script/lint         # Auto-fix formatting
 script/type-check   # Pyright type checking
