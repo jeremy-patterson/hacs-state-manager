@@ -1,13 +1,13 @@
 {
   "domain": "priority_state",
   "name": "Priority State",
+  "after_dependencies": [
+    "http"
+  ],
   "codeowners": [
     "@jeremy-patterson"
   ],
   "config_flow": true,
-  "after_dependencies": [
-    "http"
-  ],
   "documentation": "https://github.com/jeremy-patterson/hacs-state-manager",
   "integration_type": "service",
   "iot_class": "calculated",

@@ -4,10 +4,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from homeassistant.core import HomeAssistant
-
 from custom_components.priority_state.const import DOMAIN
 from custom_components.priority_state.rule_manager import RuleManager
+from homeassistant.core import HomeAssistant
 
 
 @pytest.fixture
@@ -20,14 +19,10 @@ def mock_config_entry() -> MagicMock:
 
 
 @pytest.fixture
-def manager(
-    hass: HomeAssistant, mock_config_entry: MagicMock
-) -> RuleManager:
+def manager(hass: HomeAssistant, mock_config_entry: MagicMock) -> RuleManager:
     with (
         patch.object(RuleManager, "async_load"),
-        patch(
-            "custom_components.priority_state.rule_manager.Store"
-        ) as mock_store,
+        patch("custom_components.priority_state.rule_manager.Store") as mock_store,
     ):
         mgr = RuleManager(hass, mock_config_entry.entry_id)
         mgr.target_light = "light.test"

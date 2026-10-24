@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from custom_components.priority_state.const import DOMAIN
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
-
-from custom_components.priority_state.const import DOMAIN
 
 SOURCE_USER = config_entries.SOURCE_USER
 
@@ -35,9 +34,7 @@ def register_light_services(hass: HomeAssistant):
 
 
 async def test_user_step_creates_entry(hass: HomeAssistant) -> None:
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": SOURCE_USER}
-    )
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
 
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "user"
@@ -54,14 +51,9 @@ async def test_user_step_creates_entry(hass: HomeAssistant) -> None:
 
 async def test_reconfigure_step(hass: HomeAssistant) -> None:
     """Test the reconfigure flow changes the target light."""
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": SOURCE_USER}
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"target_light": "light.test"}
-    )
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {"target_light": "light.test"})
     entry = result["result"]
-    entry_id = entry.entry_id
 
     assert entry.data["target_light"] == "light.test"
 
@@ -76,21 +68,15 @@ async def test_reconfigure_step(hass: HomeAssistant) -> None:
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "reconfigure"
 
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"target_light": "light.other"}
-    )
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {"target_light": "light.other"})
 
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
 
 
 async def test_options_flow_init_shows_menu(hass: HomeAssistant) -> None:
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": SOURCE_USER}
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"target_light": "light.test"}
-    )
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {"target_light": "light.test"})
     entry = result["result"]
     entry_id = entry.entry_id
 
